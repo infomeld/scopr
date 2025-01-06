@@ -1,14 +1,20 @@
 package utils
 
-type NewScope struct {
-	NewFailTarget  string
-	NewTarget    string
-	NewApp       string
-	NewPublicURL string
-	NewPrivateURL string
-}
+type (
+	ScopeAsset struct{
+		Type string
+		Value string
+	}
+	
+	NewScope struct {
+		NewFailTarget  string
+		NewAsset    ScopeAsset
+		NewPublicURL string
+		NewPrivateURL string
+	}
 
-type HandleClassifier struct{
-	Type string
-	Handle string
-}
+	HandleClassifier struct{
+		Type string
+		Handle string
+	}
+) 

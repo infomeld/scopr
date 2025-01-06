@@ -6,9 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"regexp"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
@@ -196,81 +194,106 @@ func (h HackeroneScp) GetScope(handle string, new_hackerone chan utils.NewScope,
 func  (h HackeroneScp) ProcessScope(scope Scope, new_hackerone chan utils.NewScope){
 
 
-	for _, asset := range scope.Data {
-
-		scope_attr := asset.Attributes
-		
-		if !asset.Attributes.EligibleForBounty {
-			// Skip out of scope
-			continue
-		}
-
-		identifier := scope_attr.Identifier
-		assetType := scope_attr.AssetType
-
-		if utils.In(assetType,[]string{"DOMAIN","URL","WILDCARD"}){
-
-			h.HandleDomainIdentifier(identifier, new_hackerone)
-
-		} else if  assetType == "OTHER" {
-			if strings.HasPrefix(identifier, "*")|| strings.HasSuffix(identifier, "*") {
-				h.HandleDomainIdentifier(identifier, new_hackerone)
-			} else {
-				h.HandleAsset(identifier, new_hackerone)
+		for _, asset := range scope.Data {
+	
+			scope_attr := asset.Attributes
+			
+			if !asset.Attributes.EligibleForBounty {
+				// Skip out of scope
+				continue
 			}
-		}else {
-			h.HandleAsset(identifier, new_hackerone)
+	
+			identifier := scope_attr.Identifier
+			assetType := scope_attr.AssetType
+	
+			if utils.In(assetType, h.Config.AssetType){
+
+				new_hackerone <- utils.NewScope{NewAsset: utils.ScopeAsset{Type:assetType ,Value: identifier}}
+	
+			} 
 		}
-
-	}
-
-}
-
-func (h HackeroneScp) CleanDomain(domain string) string {
-
-	pattern := `[\w]+[\w\-_~\.]+\.[a-zA-Z]+|$`
-	// pattern := `[\w]+[\w\-_~\.]*\.[a-zA-Z]+(\/[\w\-_~\.]+)*`
-	r, err := regexp.Compile(pattern)
-	if err != nil {
-		// Whatever happened, just return the original domain
-		return domain
-	}
-
-	cDomain := r.FindString(domain)
-	if cDomain != "" {
-		return cDomain
-	}
-	return domain
-}
-
-func  (h HackeroneScp) DomainSplitTrimSpace(domain string) []string {
-	domainSlice := strings.Split(domain, ",")
-	for i := range domainSlice {
-		domainSlice[i] = strings.TrimSpace(domainSlice[i])
-	}
-
-	return domainSlice
-}
-
-func (h HackeroneScp) HandleAsset(identifier string, new_hackerone chan utils.NewScope) {
-	domainsSlice := h.DomainSplitTrimSpace(identifier)
-	for _, identifier := range domainsSlice {
-		
-		new_hackerone <- utils.NewScope{NewApp: identifier}
-		
-	}
-}
-
-func (h HackeroneScp) HandleDomainIdentifier(identifier string, new_hackerone chan utils.NewScope){
-
-	identifier = h.CleanDomain(identifier)
-	domainsSlice := h.DomainSplitTrimSpace(identifier)
-	for _, identifier := range domainsSlice {
-		
-		new_hackerone <- utils.NewScope{NewTarget: identifier}
 	
 	}
 
-}
+
+// func  (h HackeroneScp) ProcessScope(scope Scope, new_hackerone chan utils.NewScope){
+
+
+// 	for _, asset := range scope.Data {
+
+// 		scope_attr := asset.Attributes
+		
+// 		if !asset.Attributes.EligibleForBounty {
+// 			// Skip out of scope
+// 			continue
+// 		}
+
+// 		identifier := scope_attr.Identifier
+// 		assetType := scope_attr.AssetType
+
+// 		if utils.In(assetType,h.Config.AssetType){
+
+// 			h.HandleDomainIdentifier(identifier, new_hackerone)
+
+// 		} else if  assetType == "OTHER" {
+// 			if strings.HasPrefix(identifier, "*")|| strings.HasSuffix(identifier, "*") {
+// 				h.HandleDomainIdentifier(identifier, new_hackerone)
+// 			} else {
+// 				h.HandleAsset(identifier, new_hackerone)
+// 			}
+// 		}else {
+// 			h.HandleAsset(identifier, new_hackerone)
+// 		}
+
+// 	}
+
+// }
+
+// func (h HackeroneScp) CleanDomain(domain string) string {
+
+// 	pattern := `[\w]+[\w\-_~\.]+\.[a-zA-Z]+|$`
+// 	// pattern := `[\w]+[\w\-_~\.]*\.[a-zA-Z]+(\/[\w\-_~\.]+)*`
+// 	r, err := regexp.Compile(pattern)
+// 	if err != nil {
+// 		// Whatever happened, just return the original domain
+// 		return domain
+// 	}
+
+// 	cDomain := r.FindString(domain)
+// 	if cDomain != "" {
+// 		return cDomain
+// 	}
+// 	return domain
+// }
+
+// func  (h HackeroneScp) DomainSplitTrimSpace(domain string) []string {
+// 	domainSlice := strings.Split(domain, ",")
+// 	for i := range domainSlice {
+// 		domainSlice[i] = strings.TrimSpace(domainSlice[i])
+// 	}
+
+// 	return domainSlice
+// }
+
+// func (h HackeroneScp) HandleAsset(identifier string, new_hackerone chan utils.NewScope) {
+// 	domainsSlice := h.DomainSplitTrimSpace(identifier)
+// 	for _, identifier := range domainsSlice {
+		
+// 		new_hackerone <- utils.NewScope{NewApp: identifier}
+		
+// 	}
+// }
+
+// func (h HackeroneScp) HandleDomainIdentifier(identifier string, new_hackerone chan utils.NewScope){
+
+// 	identifier = h.CleanDomain(identifier)
+// 	domainsSlice := h.DomainSplitTrimSpace(identifier)
+// 	for _, identifier := range domainsSlice {
+		
+// 		new_hackerone <- utils.NewScope{NewTarget: identifier}
+	
+// 	}
+
+// }
 
 

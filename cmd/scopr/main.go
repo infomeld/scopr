@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/infomeld/scopr/pkg/assetparser"
 	"github.com/infomeld/scopr/pkg/engine/bugcrowd"
 	"github.com/infomeld/scopr/pkg/engine/hackerone"
 	"github.com/infomeld/scopr/pkg/engine/intigriti"
@@ -106,7 +105,6 @@ func (s Scopr) hackerone(new_hackerone chan utils.NewScope, handle string ){
 
 	go func() {
 		wg.Wait()
-		
 	}()
 
 	
@@ -178,9 +176,7 @@ func (s Scopr) start(target string , new_scope_chan chan utils.NewScope ){
 
 func main() {
 
-	var banner = `
-
-                       
+	var banner = `              
 	 _____                 
 	|   __|___ ___ ___ ___ 
 	|__   |  _| . | . |  _|
@@ -193,13 +189,15 @@ func main() {
 	var cycle_time int64
 	var silent bool
 	var scope_target string
-	// var output string
+	var show_app bool
+	var show_all bool
 	var only_new bool
 
 	flag.Int64Var(&cycle_time, "t", 0, "监控周期(分钟)")
 	flag.BoolVar(&silent, "silent", false, "是否静默状态")
 	flag.StringVar(&scope_target, "s", "", "指定项目名/获取项目列表名称")
-	// flag.StringVar(&output, "o", "", "导出路径")
+	flag.BoolVar(&show_app, "app", false, "显示app")
+	flag.BoolVar(&show_all, "all", false, "显示所有")
 	flag.BoolVar(&only_new, "new", false, "是否只输出新增资产")
 
 
@@ -219,7 +217,7 @@ func main() {
 
 		tasks := []*Task{
 			NewTask("tracker", time.Duration(cycle_time)*time.Minute, func() {
-				run(silent, scope_target, only_new)
+				run(silent, scope_target, only_new, show_app, show_all)
 			}),
 		}
 		for _, task := range tasks {
@@ -228,11 +226,11 @@ func main() {
 		// 等待任务结束
 		select {}
 	} else {
-		run(silent, scope_target, only_new)
+		run(silent, scope_target, only_new, show_app, show_all)
 	}
 }
 
-func run(silent bool, scope_target string, only_new bool) {
+func run(silent bool, scope_target string, only_new bool, show_app bool,show_all bool) {
 
 	if !silent {
 		now := time.Now().Format("2006-01-02 15:04:05")
@@ -243,13 +241,14 @@ func run(silent bool, scope_target string, only_new bool) {
 	scopr := NewScopr(source_path)
 
 	// 读取源目标文件
-	source_targets := utils.ReadFileToMap(filepath.Join(source_path, "domain.txt"))
+	// source_targets := utils.ReadFileToMap(filepath.Join(source_path, "domain.txt"))
 	source_fail_targets := utils.ReadFileToMap(filepath.Join(source_path, "faildomain.txt"))
 	source_bugbounty_url := utils.ReadFileToMap(filepath.Join(source_path, "bugbounty-public.txt"))
 	private_bugbounty_url := utils.ReadFileToMap(filepath.Join(source_path, "bugbounty-private.txt"))
 
 	// 获取新增赏金目标
 	new_scope_chan := make(chan utils.NewScope)
+
 
 
 	var outputWG sync.WaitGroup
@@ -266,25 +265,36 @@ func run(silent bool, scope_target string, only_new bool) {
 	}()
 
 
+	asset_parser := assetparser.MultiTypeParser{ShowAll:show_all,ShowApp: show_app}
+
+
 	for scope := range new_scope_chan {
 
-		if scope.NewTarget!= "" {
+
+
+		if scope.NewAsset.Value != "" {
+			
 			if !only_new{
-				fmt.Println(scope.NewTarget)
-			}
 
-			if !source_targets[scope.NewTarget]{
-
-				re := regexp.MustCompile(strings.Join(scopr.Config.Blacklist, "|"))
-
-				if !re.MatchString(scope.NewTarget){
-					if only_new{
-						fmt.Println(scope.NewTarget)
-					}
-					// 保存新增目标
-					utils.SaveTargetsToFile(filepath.Join(source_path, "domain.txt"), scope.NewTarget)
+				target,_ := asset_parser.Parse(scope.NewAsset.Type, scope.NewAsset.Value)
+				if target!= ""{
+					fmt.Println(target)
 				}
+
 			}
+
+			// if !source_targets[scope.NewAsset.Value]{
+
+			// 	re := regexp.MustCompile(strings.Join(scopr.Config.Blacklist, "|"))
+
+			// 	if !re.MatchString(scope.NewTarget){
+			// 		if only_new{
+			// 			fmt.Println(scope.NewTarget)
+			// 		}
+			// 		// 保存新增目标
+			// 		utils.SaveTargetsToFile(filepath.Join(source_path, "domain.txt"), scope.NewTarget)
+			// 	}
+			// }
 		}
 
 		if scope.NewFailTarget!= "" && !source_fail_targets[scope.NewFailTarget] {

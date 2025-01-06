@@ -17,18 +17,22 @@ type Private struct{
 type Bugcrowd struct {
 	Enable      bool `yaml:"Enable"`
 	Concurrency int  `yaml:"Concurrency"`
+	AssetType []string `yaml:"AssetType"`
 	// Private Private `yaml:"Private"`
 }
 
 type HackerOne struct {
 	Enable      bool `yaml:"Enable"`
 	Concurrency int  `yaml:"Concurrency"`
+	AssetType []string `yaml:"AssetType"`
 	Private Private `yaml:"Private"`
+	
 }
 
 type Intigriti struct {
 	Enable      bool `yaml:"Enable"`
 	Concurrency int  `yaml:"Concurrency"`
+	AssetType []string `yaml:"AssetType"`
 	// Private Private `yaml:"Private"`
 }
 type DingTalk struct {
@@ -47,7 +51,7 @@ type Config struct {
 
 func Initconfig(source_path string) (config Config) {
 	config = Config{
-		HackerOne: HackerOne{Enable: true, Concurrency: 200},
+		HackerOne: HackerOne{Enable: true, Concurrency: 200,AssetType: []string{"DOMAIN","URL","WILDCARD","API","OTHER"}},
 		Bugcrowd:  Bugcrowd{Enable: true, Concurrency: 15},
 		Intigriti: Intigriti{Enable: true, Concurrency: 50},
 		DingTalk: DingTalk{
