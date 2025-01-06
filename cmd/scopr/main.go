@@ -184,8 +184,8 @@ func main() {
 	 _____                 
 	|   __|___ ___ ___ ___ 
 	|__   |  _| . | . |  _|
-	|_____|___|___|  _|_|  
-	    		  |_|     v1.0
+	|_____|___|___| __|_|  
+	              |_|     v1.0
 
 	Keep track of bounty targets
     `
@@ -257,54 +257,53 @@ func run(silent bool, scope_target string, only_new bool) {
 
 	go func() {
 		defer outputWG.Done()
-
-		for scope := range new_scope_chan {
-
-			if scope.NewTarget!= "" {
-				if !only_new{
-					fmt.Println(scope.NewTarget)
-				}
-
-				if !source_targets[scope.NewTarget]{
-
-					re := regexp.MustCompile(strings.Join(scopr.Config.Blacklist, "|"))
-
-					if !re.MatchString(scope.NewTarget){
-						if only_new{
-							fmt.Println(scope.NewTarget)
-						}
-						// 保存新增目标
-						utils.SaveTargetsToFile(filepath.Join(source_path, "domain.txt"), scope.NewTarget)
-					}
-				}
-			}
-
-			if scope.NewFailTarget!= "" && !source_fail_targets[scope.NewFailTarget] {
-
-				utils.SaveTargetsToFile(filepath.Join(source_path, "faildomain.txt"), scope.NewFailTarget)
-			}
-
-			if  scope.NewPublicURL != "" && !source_bugbounty_url[scope.NewPublicURL]{
-
-				utils.SaveTargetsToFile(filepath.Join(source_path, "bugbounty-public.txt"), scope.NewPublicURL)
-
-			}
-
-			if scope.NewPrivateURL!= "" && !private_bugbounty_url[scope.NewPrivateURL]{
-
-				utils.SaveTargetsToFile(filepath.Join(source_path, "bugbounty-private.txt"), scope.NewPrivateURL)
-			}
-
-		}
-
+		scopr.start(scope_target, new_scope_chan)
 	}()
-
-	scopr.start(scope_target, new_scope_chan)
 
 	go func() {
 		outputWG.Wait()
 		close(new_scope_chan)
 	}()
+
+
+	for scope := range new_scope_chan {
+
+		if scope.NewTarget!= "" {
+			if !only_new{
+				fmt.Println(scope.NewTarget)
+			}
+
+			if !source_targets[scope.NewTarget]{
+
+				re := regexp.MustCompile(strings.Join(scopr.Config.Blacklist, "|"))
+
+				if !re.MatchString(scope.NewTarget){
+					if only_new{
+						fmt.Println(scope.NewTarget)
+					}
+					// 保存新增目标
+					utils.SaveTargetsToFile(filepath.Join(source_path, "domain.txt"), scope.NewTarget)
+				}
+			}
+		}
+
+		if scope.NewFailTarget!= "" && !source_fail_targets[scope.NewFailTarget] {
+
+			utils.SaveTargetsToFile(filepath.Join(source_path, "faildomain.txt"), scope.NewFailTarget)
+		}
+
+		if  scope.NewPublicURL != "" && !source_bugbounty_url[scope.NewPublicURL]{
+
+			utils.SaveTargetsToFile(filepath.Join(source_path, "bugbounty-public.txt"), scope.NewPublicURL)
+
+		}
+
+		if scope.NewPrivateURL!= "" && !private_bugbounty_url[scope.NewPrivateURL]{
+
+			utils.SaveTargetsToFile(filepath.Join(source_path, "bugbounty-private.txt"), scope.NewPrivateURL)
+		}
+
+	}
 
 
 	// // 发送通知信息
