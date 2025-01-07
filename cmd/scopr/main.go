@@ -17,6 +17,17 @@ import (
 	"github.com/infomeld/scopr/pkg/utils"
 )
 
+
+const banner = `              
+ _____                 
+|   __|___ ___ ___ ___ 
+|__   |  _| . | . |  _|
+|_____|___|___| __|_|  
+              |_|     v1.0
+
+Keep track of bounty targets
+`
+
 var source_path = filepath.Join(utils.HomeDir(), ".config/scopr/")
 
 type Task struct {
@@ -175,16 +186,6 @@ func (s Scopr) start(target string , new_scope_chan chan utils.NewScope ){
 }
 
 func main() {
-
-	var banner = `              
-	 _____                 
-	|   __|___ ___ ___ ___ 
-	|__   |  _| . | . |  _|
-	|_____|___|___| __|_|  
-	              |_|     v1.0
-
-	Keep track of bounty targets
-    `
 
 	var cycle_time int64
 	var silent bool
